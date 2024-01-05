@@ -4,6 +4,10 @@ pub mod evidence;
 pub mod state_machine;
 pub mod types;
 mod url_decode;
+mod w3d_assets;
+mod w3d_ownership;
+mod w3d_state;
+
 
 #[cfg(test)]
 mod tests;
