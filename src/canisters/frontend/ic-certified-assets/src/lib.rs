@@ -8,6 +8,11 @@ mod w3d_assets;
 mod w3d_ownership;
 mod w3d_state;
 
+// State helper for frontend assets init, used in w3d_assets::init_frontend_assets()
+pub fn assets_mut<R>(f: impl FnOnce(&mut State) -> R) -> R {
+    STATE.with(|assets| f(&mut assets.borrow_mut()))
+}
+
 
 #[cfg(test)]
 mod tests;
