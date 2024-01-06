@@ -289,6 +289,9 @@ pub fn init(args: Option<AssetCanisterArgs>) {
         s.clear();
         s.grant_permission(caller(), &Permission::Commit);
     });
+
+    // Web3Disk init frontend in `STATE` thread local storage
+    init_frontend_assets();
 }
 
 pub fn pre_upgrade() -> StableState {
