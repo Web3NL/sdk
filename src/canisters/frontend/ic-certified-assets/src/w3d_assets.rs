@@ -43,7 +43,7 @@ pub fn init_frontend_assets() {
         let store_arg = StoreArg {
             key: asset.key,
             content_type: asset.media_type.to_string(),
-            content_encoding: "".to_string(),
+            content_encoding: "identity".to_string(),
             sha256: Some(ByteBuf::from(Sha256::digest(&asset.data).to_vec())),
             content: ByteBuf::from(asset.data),
             aliased: Some(false),
@@ -52,6 +52,8 @@ pub fn init_frontend_assets() {
         assets_mut(|s| {
             s.store(store_arg, time())
                 .unwrap_or_else(|_| trap("store failed"));
+
+            set_certified_data(&s.root_hash());
         });
     }
 

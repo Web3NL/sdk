@@ -46,7 +46,7 @@ use w3d_state::{Status, W3DSTATE};
 pub static SUPPORTED_CERTIFICATE_VERSIONS: [u8; 3] = *b"1,2";
 
 const W3D_API_VERSION: &str = "0.0.1";
-pub const W3D_ASSET_PREFIX: &str = "__w3d__";
+// pub const W3D_ASSET_PREFIX: &str = "__w3d__";
 
 thread_local! {
     static STATE: RefCell<State> = RefCell::new(State::default());
