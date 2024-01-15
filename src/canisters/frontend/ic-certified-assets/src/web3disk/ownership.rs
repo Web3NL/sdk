@@ -1,11 +1,15 @@
-use crate::w3d_state::{Mode, Status, W3DSTATE};
-use crate::Permission;
-use crate::{assets_mut, w3d_canister_status};
+// use crate::w3d_state::{Mode, Status, W3DSTATE};
+// use crate::Permission;
+// use crate::{assets_mut, w3d_canister_status};
 use candid::{CandidType, Deserialize, Principal};
 use ic_cdk::api::{
     management_canister::main::{update_settings, CanisterSettings, UpdateSettingsArgument},
     trap,
 };
+
+use crate::types::Permission;
+
+use super::{state::{Mode, W3DSTATE, Status}, api::{w3d_canister_status, assets_mut}};
 
 #[derive(Clone, Debug, CandidType, Deserialize)]
 pub struct GrantOwnershipArgs {
