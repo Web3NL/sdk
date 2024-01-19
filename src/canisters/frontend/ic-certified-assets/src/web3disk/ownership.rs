@@ -43,6 +43,7 @@ pub async fn handle_grant_ownership(args: GrantOwnershipArgs) {
                             memory_allocation: Some(settings.memory_allocation),
                             compute_allocation: Some(settings.compute_allocation),
                             freezing_threshold: Some(settings.freezing_threshold),
+                            reserved_cycles_limit: Some(settings.reserved_cycles_limit),
                         },
                     }
                 }
@@ -57,6 +58,7 @@ pub async fn handle_grant_ownership(args: GrantOwnershipArgs) {
                             memory_allocation: Some(settings.memory_allocation),
                             compute_allocation: Some(settings.compute_allocation),
                             freezing_threshold: Some(settings.freezing_threshold),
+                            reserved_cycles_limit: Some(settings.reserved_cycles_limit),
                         },
                     }
                 }
@@ -89,6 +91,7 @@ pub async fn add_controller(p: Principal) {
             memory_allocation: Some(settings.memory_allocation),
             compute_allocation: Some(settings.compute_allocation),
             freezing_threshold: Some(settings.freezing_threshold),
+            reserved_cycles_limit: Some(settings.reserved_cycles_limit),
         },
     };
 
