@@ -3,13 +3,19 @@
 // use crate::{assets_mut, canister_status};
 use candid::{CandidType, Deserialize, Principal};
 use ic_cdk::api::{
-    management_canister::main::{update_settings, CanisterSettings, UpdateSettingsArgument},
+    management_canister::{
+        main::{canister_status, update_settings, CanisterSettings, UpdateSettingsArgument, CanisterStatusResponse},
+        provisional::CanisterIdRecord,
+    },
     trap,
 };
 
 use crate::types::Permission;
 
-use super::{state::{Mode, W3DSTATE, Status}, api::{canister_status, assets_mut}};
+use super::{
+    api::assets_mut,
+    state::{Mode, Status, W3DSTATE},
+};
 
 #[derive(Clone, Debug, CandidType, Deserialize)]
 pub struct GrantOwnershipArgs {
@@ -28,8 +34,8 @@ pub async fn handle_grant_ownership(args: GrantOwnershipArgs) {
         Mode::Trial => grant_commit_permission(args.ii_principal),
         Mode::Developer | Mode::User => {
             grant_commit_permission(args.ii_principal);
-
-            let mut settings = canister_status().await.settings;
+            
+            let mut settings = canister_status_response().await.settings;
 
             let update_settings_arg: UpdateSettingsArgument = match args.mode {
                 Mode::Developer => {
@@ -79,7 +85,7 @@ pub async fn handle_grant_ownership(args: GrantOwnershipArgs) {
 }
 
 pub async fn add_controller(p: Principal) {
-    let mut settings = canister_status().await.settings;
+    let mut settings = canister_status_response().await.settings;
 
     settings.controllers.push(p);
     let new_controllers = settings.controllers;
@@ -105,4 +111,14 @@ fn grant_commit_permission(p: Principal) {
     assets_mut(|s| {
         s.grant_permission(p, &Permission::Commit);
     });
+}
+
+pub async fn canister_status_response() -> CanisterStatusResponse {
+    let arg = CanisterIdRecord {
+        canister_id: ic_cdk::api::id(),
+    };
+
+    canister_status(arg).await
+        .unwrap_or_else(|err| trap(&format!("{:?}", err)))
+        .0
 }

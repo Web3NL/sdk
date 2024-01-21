@@ -2733,6 +2733,7 @@ dependencies = [
  "itertools 0.10.5",
  "mime",
  "mime_guess",
+ "num-bigint 0.4.4",
  "num-traits",
  "serde",
  "serde_bytes",

@@ -1,4 +1,7 @@
-use super::ownership::{add_controller as ic_add_controller, handle_grant_ownership, GrantOwnershipArgs};
+use super::frontend::CanisterInfo;
+use super::ownership::{
+    add_controller as ic_add_controller, handle_grant_ownership, GrantOwnershipArgs,
+};
 use super::state::{Status, W3DSTATE};
 use super::STATE;
 use crate::asset_certification::types::http::{
@@ -6,9 +9,7 @@ use crate::asset_certification::types::http::{
 };
 use crate::state_machine::{AssetDetails, EncodedAsset, State};
 use crate::types::{DeleteAssetArguments, GetArg, Permission, StoreArg};
-use candid::{Principal, candid_method};
-use ic_cdk::api::management_canister::main::{canister_status as ic_canister_status, CanisterStatusResponse};
-use ic_cdk::api::management_canister::provisional::CanisterIdRecord;
+use candid::{candid_method, Principal};
 use ic_cdk::api::{data_certificate, set_certified_data, time};
 use ic_cdk::{caller, query, trap, update};
 
@@ -100,15 +101,8 @@ fn api_version() -> String {
 
 #[update(guard = "can_commit")]
 #[candid_method(update)]
-pub async fn canister_status() -> CanisterStatusResponse {
-    let arg = CanisterIdRecord {
-        canister_id: ic_cdk::api::id(),
-    };
-
-    match ic_canister_status(arg).await {
-        Ok(status) => return status.0,
-        Err(err) => trap(&format!("{:?}, {}", err.0, err.1)),
-    }
+pub async fn settings_info() -> CanisterInfo {
+    crate::web3disk::frontend::_settings_info().await
 }
 
 #[update(guard = "is_controller")]

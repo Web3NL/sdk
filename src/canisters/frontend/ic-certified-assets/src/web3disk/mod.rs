@@ -1,14 +1,15 @@
 mod api;
 mod assets;
+pub mod frontend;
 mod ownership;
 mod state;
 
-use std::cell::RefCell;
+use crate::state_machine::{StableState, State};
+use crate::types::{AssetCanisterArgs, InitArgs, Permission, UpgradeArgs};
 use assets::init_frontend_assets;
 use ic_cdk::api::set_certified_data;
 use ic_cdk::caller;
-use crate::state_machine::{State, StableState};
-use crate::types::{Permission, AssetCanisterArgs, InitArgs, UpgradeArgs};
+use std::cell::RefCell;
 
 thread_local! {
     pub static STATE: RefCell<State> = RefCell::new(State::default());
@@ -16,7 +17,9 @@ thread_local! {
 
 pub fn init(args: Option<AssetCanisterArgs>) {
     if let Some(upgrade_arg) = args {
-        let AssetCanisterArgs::Init(InitArgs {}) = upgrade_arg else { ic_cdk::trap("Cannot initialize the canister with an Upgrade argument. Please provide an Init argument.")};
+        let AssetCanisterArgs::Init(InitArgs {}) = upgrade_arg else {
+            ic_cdk::trap("Cannot initialize the canister with an Upgrade argument. Please provide an Init argument.")
+        };
     }
     STATE.with(|s| {
         let mut s = s.borrow_mut();
