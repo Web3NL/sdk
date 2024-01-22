@@ -13,7 +13,7 @@ use candid::{candid_method, Principal};
 use ic_cdk::api::{data_certificate, set_certified_data, time};
 use ic_cdk::{caller, query, trap, update};
 
-const W3D_API_VERSION: &str = "0.0.1";
+const W3D_API_VERSION: &str = "0.0.2";
 
 // State helper for frontend assets init, used in assets::init_frontend_assets()
 pub fn assets_mut<R>(f: impl FnOnce(&mut State) -> R) -> R {
