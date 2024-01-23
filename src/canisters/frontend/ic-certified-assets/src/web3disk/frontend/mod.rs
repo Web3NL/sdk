@@ -1,3 +1,5 @@
+pub mod topup;
+
 use candid::{CandidType, Deserialize, Principal};
 use ic_cdk::{
     api::management_canister::{
