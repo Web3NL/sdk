@@ -1,4 +1,4 @@
-use super::frontend::CanisterInfo;
+use super::frontend::{CanisterInfo, CanisterOwners};
 use super::ownership::{
     add_controller as ic_add_controller, handle_grant_ownership, GrantOwnershipArgs,
 };
@@ -103,6 +103,12 @@ fn api_version() -> String {
 #[candid_method(update)]
 pub async fn settings_info() -> CanisterInfo {
     crate::web3disk::frontend::_settings_info().await
+}
+
+#[update(guard = "can_commit")]
+#[candid_method(update)]
+async fn owners() -> CanisterOwners {
+    crate::web3disk::frontend::_owners().await
 }
 
 #[update(guard = "is_controller")]

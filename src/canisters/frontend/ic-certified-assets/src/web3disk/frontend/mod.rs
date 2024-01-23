@@ -1,4 +1,4 @@
-use candid::CandidType;
+use candid::{CandidType, Deserialize, Principal};
 use ic_cdk::{
     api::management_canister::{
         main::{canister_status, CanisterStatusResponse},
@@ -8,6 +8,8 @@ use ic_cdk::{
 };
 use num_bigint::BigUint;
 use num_traits::ToPrimitive;
+
+use super::state::W3DSTATE;
 
 #[derive(Clone, CandidType)]
 pub struct CanisterInfo {
@@ -20,8 +22,8 @@ pub struct CanisterInfo {
 impl From<CanisterStatusResponse> for CanisterInfo {
     fn from(canister_status: CanisterStatusResponse) -> Self {
         /*
-        * Convert cycle balance in candid::NAT to f64
-        */
+         * Convert cycle balance in candid::NAT to f64
+         */
         let cycles: BigUint = canister_status.cycles.0;
 
         // 1 T cycles = 10^12 cycles
@@ -32,11 +34,11 @@ impl From<CanisterStatusResponse> for CanisterInfo {
             .unwrap_or_else(|| trap("Failed to convert BigUint to f64"));
 
         // Divide by 10^3 to get T cycles with three decimals
-        let cycles: f64 = cycles  / 1_000.;
+        let cycles: f64 = cycles / 1_000.;
 
         /*
-        * Convert memory_size in bytes candid::Nat to MB f64
-        */
+         * Convert memory_size in bytes candid::Nat to MB f64
+         */
         let memory: BigUint = canister_status.memory_size.0;
 
         // 1 MB = 10^6 bytes
@@ -49,7 +51,7 @@ impl From<CanisterStatusResponse> for CanisterInfo {
         // Divide by 10^3 to get MB with three decimals
         let memory: f64 = memory / 1000 as f64;
 
-        Self { cycles, memory}
+        Self { cycles, memory }
     }
 }
 
@@ -64,4 +66,41 @@ pub async fn _settings_info() -> CanisterInfo {
         .0;
 
     CanisterInfo::from(canister_status_response)
+}
+
+#[derive(Clone, CandidType, Deserialize)]
+pub struct CanisterOwners {
+    pub ii_principal: Principal,
+    pub owners: Option<Vec<Principal>>,
+}
+
+pub async fn _owners() -> CanisterOwners {
+    let id = ic_cdk::api::id();
+    let ii_principal = W3DSTATE.with(|state| {
+        state
+            .borrow()
+            .ii_principal()
+            .unwrap_or_else(|| trap("No II principal set"))
+    });
+
+    let arg = CanisterIdRecord {
+        canister_id: ic_cdk::api::id(),
+    };
+
+    let controllers: Vec<Principal> = canister_status(arg)
+        .await
+        .unwrap_or_else(|err| trap(&format!("{:?}", err)))
+        .0
+        .settings
+        .controllers;
+
+    let owners = controllers
+        .into_iter()
+        .filter(|p| p != &ii_principal && p != &id)
+        .collect();
+
+    CanisterOwners {
+        ii_principal,
+        owners: Some(owners),
+    }
 }
