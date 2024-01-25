@@ -1,5 +1,4 @@
 mod web3disk;
-pub use web3disk::{init, pre_upgrade, post_upgrade};
 
 pub mod asset_certification;
 pub mod evidence;
@@ -10,7 +9,7 @@ mod url_decode;
 #[cfg(test)]
 mod tests;
 
-pub use crate::state_machine::StableState;
+// pub use crate::state_machine::StableState;
 
 // use crate::{
 //     asset_certification::types::http::{

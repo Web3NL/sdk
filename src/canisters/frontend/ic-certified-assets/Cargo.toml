@@ -49,3 +49,8 @@ version = "1.0.28"
 # Web3Disk dep
 [dependencies.num-bigint]
 version = "0.4.4"
+
+# Web3Disk canister
+[lib]
+path = "src/lib.rs"
+crate-type = ["cdylib"]
