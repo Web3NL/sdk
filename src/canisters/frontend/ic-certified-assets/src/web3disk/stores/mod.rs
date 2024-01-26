@@ -10,7 +10,7 @@ use std::cell::RefCell;
 
 pub static MEM_ID_CONFIG: MemoryId = MemoryId::new(0);
 pub static MEM_ID_FILE_DATA: MemoryId = MemoryId::new(1);
-pub static MEM_ID_FILE_METADATA: MemoryId = MemoryId::new(2);
+pub static MEM_ID_METADATA: MemoryId = MemoryId::new(2);
 
 thread_local! {
     static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> = RefCell::new(MemoryManager::init(DefaultMemoryImpl::default()));
