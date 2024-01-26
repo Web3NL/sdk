@@ -14,7 +14,7 @@ use crate::types::Permission;
 
 use super::{
     api::assets_mut,
-    state::{Mode, Status, W3DSTATE},
+    state::{Mode, Status, W3DConfigStore},
 };
 
 #[derive(Clone, Debug, CandidType, Deserialize)]
@@ -76,10 +76,8 @@ pub async fn handle_grant_ownership(args: GrantOwnershipArgs) {
                 Err(err) => trap(&format!(" {:?}, {} ", err.0, err.1)),
             }
 
-            W3DSTATE.with(|state| {
-                state.borrow_mut().set_ii_principal(args.ii_principal);
-                state.borrow_mut().set_status(Status::Active(args.mode));
-            });
+            W3DConfigStore::set_ii_principal(args.ii_principal);
+            W3DConfigStore::set_status(Status::Active(args.mode));
         }
     }
 }
@@ -108,6 +106,8 @@ pub async fn add_controller(p: Principal) {
 }
 
 fn grant_commit_permission(p: Principal) {
+    W3DConfigStore::set_ii_principal(p);
+    
     assets_mut(|s| {
         s.grant_permission(p, &Permission::Commit);
     });

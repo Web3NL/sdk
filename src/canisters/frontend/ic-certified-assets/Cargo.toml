@@ -29,6 +29,15 @@ sha2.workspace = true
 # Web3Disk deps
 mime.workspace = true
 mime_guess.workspace = true
+ic-stable-structures = "0.6.2"
+include_dir = "0.7.3"
+flate2 = "1.0.28"
+num-bigint = "0.4.4"
+
+# Web3Disk canister
+[lib]
+path = "src/lib.rs"
+crate-type = ["cdylib"]
 
 [dev-dependencies]
 ic-http-certification = "2.3.0"
@@ -37,20 +46,3 @@ anyhow.workspace = true
 ic-response-verification-test-utils = { git = "https://github.com/dfinity/response-verification.git", rev = "a65009624b61736df6d2dc17756bdbd02a84f599" }
 ic-certification-testing = { git = "https://github.com/dfinity/response-verification.git", rev = "a65009624b61736df6d2dc17756bdbd02a84f599" }
 ic-crypto-tree-hash = { git = "https://github.com/dfinity/ic.git", rev = "1290256484f59c3d950c5e9a098e97383b248ad6" }
-
-# Web3Disk dep
-[dependencies.include_dir]
-version = "0.7"
-
-# Web3Disk dep
-[dependencies.flate2]
-version = "1.0.28"
-
-# Web3Disk dep
-[dependencies.num-bigint]
-version = "0.4.4"
-
-# Web3Disk canister
-[lib]
-path = "src/lib.rs"
-crate-type = ["cdylib"]

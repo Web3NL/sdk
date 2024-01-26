@@ -4,6 +4,7 @@ pub mod frontend;
 mod ownership;
 mod state;
 
+use self::state::W3DConfigStore;
 use crate::state_machine::State;
 use crate::types::Permission;
 use assets::init_frontend_assets;
@@ -28,4 +29,11 @@ pub fn init() {
 #[ic_cdk::post_upgrade]
 pub fn post_upgrade() {
     init();
+
+    if let Some(ii_principal) = W3DConfigStore::ii_principal() {
+        STATE.with(|s| {
+            s.borrow_mut()
+                .grant_permission(ii_principal, &Permission::Commit)
+        });
+    }
 }

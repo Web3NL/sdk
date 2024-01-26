@@ -2,7 +2,7 @@ use super::frontend::{CanisterInfo, CanisterOwners};
 use super::ownership::{
     add_controller as ic_add_controller, handle_grant_ownership, GrantOwnershipArgs,
 };
-use super::state::{Status, W3DSTATE};
+use super::state::{Status, W3DConfigStore};
 use super::STATE;
 use crate::asset_certification::types::http::{
     CallbackFunc, HttpRequest, HttpResponse, StreamingCallbackHttpResponse, StreamingCallbackToken,
@@ -20,49 +20,49 @@ pub fn assets_mut<R>(f: impl FnOnce(&mut State) -> R) -> R {
     STATE.with(|assets| f(&mut assets.borrow_mut()))
 }
 
-#[update(guard = "can_commit")]
-#[candid_method(update)]
-fn store(arg: StoreArg) {
-    STATE.with(move |s| {
-        if let Err(msg) = s.borrow_mut().store(arg, time()) {
-            trap(&msg);
-        }
-        set_certified_data(&s.borrow().root_hash());
-    });
-}
+// #[update(guard = "can_commit")]
+// #[candid_method(update)]
+// fn store(arg: StoreArg) {
+//     STATE.with(move |s| {
+//         if let Err(msg) = s.borrow_mut().store(arg, time()) {
+//             trap(&msg);
+//         }
+//         set_certified_data(&s.borrow().root_hash());
+//     });
+// }
 
-#[update(guard = "can_commit")]
-#[candid_method(update)]
-fn delete_asset(arg: DeleteAssetArguments) {
-    STATE.with(|s| {
-        s.borrow_mut().delete_asset(arg);
-        set_certified_data(&s.borrow().root_hash());
-    });
-}
+// #[update(guard = "can_commit")]
+// #[candid_method(update)]
+// fn delete_asset(arg: DeleteAssetArguments) {
+//     STATE.with(|s| {
+//         s.borrow_mut().delete_asset(arg);
+//         set_certified_data(&s.borrow().root_hash());
+//     });
+// }
 
-#[query(guard = "can_commit")]
-#[candid_method(query)]
-fn get(arg: GetArg) -> EncodedAsset {
-    STATE.with(|s| match s.borrow().get(arg) {
-        Ok(asset) => asset,
-        Err(msg) => trap(&msg),
-    })
-}
+// #[query(guard = "can_commit")]
+// #[candid_method(query)]
+// fn get(arg: GetArg) -> EncodedAsset {
+//     STATE.with(|s| match s.borrow().get(arg) {
+//         Ok(asset) => asset,
+//         Err(msg) => trap(&msg),
+//     })
+// }
 
-#[query(guard = "can_commit")]
-#[candid_method(query)]
-fn list() -> Vec<AssetDetails> {
-    STATE
-        .with(|s| s.borrow().list_assets())
-        .into_iter()
-        // .filter(|asset| asset.key.starts_with(W3D_ASSET_PREFIX))
-        .collect()
-}
+// #[query(guard = "can_commit")]
+// #[candid_method(query)]
+// fn list() -> Vec<AssetDetails> {
+//     STATE
+//         .with(|s| s.borrow().list_assets())
+//         .into_iter()
+//         // .filter(|asset| asset.key.starts_with(W3D_ASSET_PREFIX))
+//         .collect()
+// }
 
 #[update(guard = "is_controller")]
 #[candid_method(update)]
 async fn grant_ownership(arg: GrantOwnershipArgs) {
-    if W3DSTATE.with(|state| state.borrow().is_active()) {
+    if W3DConfigStore::is_active() {
         trap("Already initialized")
     }
 
@@ -77,7 +77,7 @@ async fn status() -> Status {
         trap("Anonymous principal not allowed")
     }
 
-    W3DSTATE.with(|state| state.borrow().status())
+    W3DConfigStore::status()
 }
 
 #[query]
@@ -87,7 +87,7 @@ async fn active() -> bool {
         trap("Anonymous principal not allowed")
     }
 
-    match W3DSTATE.with(|state| state.borrow().status()) {
+    match W3DConfigStore::status() {
         Status::Active(_) => true,
         _ => false,
     }
@@ -120,12 +120,7 @@ async fn add_controller(p: Principal) {
 #[query(guard = "can_commit")]
 #[candid_method(query)]
 fn ii_principal() -> Principal {
-    W3DSTATE.with(|state| {
-        state
-            .borrow()
-            .ii_principal()
-            .unwrap_or_else(|| trap("No II principal set"))
-    })
+    W3DConfigStore::ii_principal().unwrap_or_else(|| trap("No II principal set"))
 }
 
 #[query]

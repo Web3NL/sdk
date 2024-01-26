@@ -11,7 +11,7 @@ use ic_cdk::{
 use num_bigint::BigUint;
 use num_traits::ToPrimitive;
 
-use super::state::W3DSTATE;
+use super::state::W3DConfigStore;
 
 #[derive(Clone, CandidType)]
 pub struct CanisterInfo {
@@ -78,12 +78,8 @@ pub struct CanisterOwners {
 
 pub async fn _owners() -> CanisterOwners {
     let id = ic_cdk::api::id();
-    let ii_principal = W3DSTATE.with(|state| {
-        state
-            .borrow()
-            .ii_principal()
-            .unwrap_or_else(|| trap("No II principal set"))
-    });
+    
+    let ii_principal = W3DConfigStore::ii_principal().unwrap_or_else(|| trap("No II principal set"));
 
     let arg = CanisterIdRecord {
         canister_id: ic_cdk::api::id(),
