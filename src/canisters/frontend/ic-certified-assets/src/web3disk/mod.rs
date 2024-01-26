@@ -1,28 +1,20 @@
-mod api;
 mod assets;
-pub mod frontend;
+mod frontend;
+mod interface;
 mod ownership;
-mod state;
+mod stores;
 
-use self::state::W3DConfigStore;
-use crate::state_machine::State;
 use crate::types::Permission;
 use assets::init_frontend_assets;
-use std::cell::RefCell;
 
-thread_local! {
-    pub static STATE: RefCell<State> = RefCell::new(State::default());
-}
+use self::stores::{config::W3DConfigStore, heap::StateStore};
 
 #[ic_cdk::init]
 pub fn init() {
-    STATE.with(|s| {
-        let mut s = s.borrow_mut();
-        s.clear();
-        s.grant_permission(ic_cdk::caller(), &Permission::Commit);
-    });
+    StateStore::clear();
+    StateStore::grant_permission(ic_cdk::caller(), &Permission::Commit);
 
-    // Web3Disk init frontend in `STATE` thread local storage
+    // Init frontend dir in `STATE` thread local storage
     init_frontend_assets();
 }
 
@@ -31,9 +23,6 @@ pub fn post_upgrade() {
     init();
 
     if let Some(ii_principal) = W3DConfigStore::ii_principal() {
-        STATE.with(|s| {
-            s.borrow_mut()
-                .grant_permission(ii_principal, &Permission::Commit)
-        });
+        StateStore::grant_permission(ii_principal, &Permission::Commit);
     }
 }

@@ -2,23 +2,22 @@ use super::frontend::{CanisterInfo, CanisterOwners};
 use super::ownership::{
     add_controller as ic_add_controller, handle_grant_ownership, GrantOwnershipArgs,
 };
-use super::state::{Status, W3DConfigStore};
-use super::STATE;
+use super::stores::config::{Status, W3DConfigStore};
+use super::stores::heap::StateStore;
 use crate::asset_certification::types::http::{
     CallbackFunc, HttpRequest, HttpResponse, StreamingCallbackHttpResponse, StreamingCallbackToken,
 };
-use crate::state_machine::{AssetDetails, EncodedAsset, State};
-use crate::types::{DeleteAssetArguments, GetArg, Permission, StoreArg};
+use crate::types::Permission;
 use candid::{candid_method, Principal};
-use ic_cdk::api::{data_certificate, set_certified_data, time};
+use ic_cdk::api::data_certificate;
 use ic_cdk::{caller, query, trap, update};
 
 const W3D_API_VERSION: &str = "0.0.2";
 
 // State helper for frontend assets init, used in assets::init_frontend_assets()
-pub fn assets_mut<R>(f: impl FnOnce(&mut State) -> R) -> R {
-    STATE.with(|assets| f(&mut assets.borrow_mut()))
-}
+// pub fn assets_mut<R>(f: impl FnOnce(&mut State) -> R) -> R {
+//     STATE.with(|assets| f(&mut assets.borrow_mut()))
+// }
 
 // #[update(guard = "can_commit")]
 // #[candid_method(update)]
@@ -128,36 +127,21 @@ fn ii_principal() -> Principal {
 fn http_request(req: HttpRequest) -> HttpResponse {
     let certificate = data_certificate().unwrap_or_else(|| trap("no data certificate available"));
 
-    STATE.with(|s| {
-        s.borrow().http_request(
-            req,
-            &certificate,
-            CallbackFunc::new(ic_cdk::id(), "http_request_streaming_callback".to_string()),
-        )
-    })
+    StateStore::http_request(
+        req,
+        &certificate,
+        CallbackFunc::new(ic_cdk::id(), "http_request_streaming_callback".to_string()),
+    )
 }
 
 #[query]
 #[candid_method(query)]
 fn http_request_streaming_callback(token: StreamingCallbackToken) -> StreamingCallbackHttpResponse {
-    STATE.with(|s| {
-        s.borrow()
-            .http_request_streaming_callback(token)
-            .unwrap_or_else(|msg| trap(&msg))
-    })
-}
-
-fn can(permission: Permission) -> Result<(), String> {
-    STATE.with(|s| {
-        s.borrow()
-            .can(&caller(), &permission)
-            .then_some(())
-            .ok_or_else(|| format!("Caller does not have {} permission", permission))
-    })
+    StateStore::http_request_streaming_callback(token)
 }
 
 fn can_commit() -> Result<(), String> {
-    can(Permission::Commit)
+    StateStore::can(Permission::Commit)
 }
 
 fn is_controller() -> Result<(), String> {

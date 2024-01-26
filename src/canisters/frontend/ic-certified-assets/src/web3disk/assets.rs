@@ -1,4 +1,4 @@
-use crate::types::{StoreArg, SetAssetPropertiesArguments};
+use crate::types::{SetAssetPropertiesArguments, StoreArg};
 use ic_cdk::api::{set_certified_data, time, trap};
 use include_dir::{include_dir, Dir};
 use mime::Mime;
@@ -6,7 +6,7 @@ use serde_bytes::ByteBuf;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 
-use super::api::assets_mut;
+use super::stores::heap::StateStore;
 
 static ASSET_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../../../../../src/web3disk/build");
 
@@ -50,12 +50,9 @@ pub fn init_frontend_assets() {
             aliased: Some(false),
         };
 
-        assets_mut(|s| {
-            s.store(store_arg, time())
-                .unwrap_or_else(|_| trap("store failed"));
+        StateStore::store(store_arg, time()).unwrap_or_else(|_| trap("store failed"));
 
-            set_certified_data(&s.root_hash());
-        });
+        set_certified_data(&StateStore::root_hash());
     }
 
     // add CORS to /.well-known/ii-alternative-origins
@@ -75,12 +72,9 @@ pub fn init_frontend_assets() {
         allow_raw_access: None,
     };
 
-    assets_mut(|s| {
-        s.set_asset_properties(arg)
-            .expect("set_asset_properties failed");
+    StateStore::set_asset_properties(arg).unwrap_or_else(|_| trap("set_asset_properties failed"));
 
-        set_certified_data(&s.root_hash());
-    });
+    set_certified_data(&StateStore::root_hash());
 }
 
 fn collect_assets_recursive(dir: &Dir) -> Vec<Asset> {

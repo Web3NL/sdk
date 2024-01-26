@@ -4,7 +4,10 @@
 use candid::{CandidType, Deserialize, Principal};
 use ic_cdk::api::{
     management_canister::{
-        main::{canister_status, update_settings, CanisterSettings, UpdateSettingsArgument, CanisterStatusResponse},
+        main::{
+            canister_status, update_settings, CanisterSettings, CanisterStatusResponse,
+            UpdateSettingsArgument,
+        },
         provisional::CanisterIdRecord,
     },
     trap,
@@ -12,9 +15,9 @@ use ic_cdk::api::{
 
 use crate::types::Permission;
 
-use super::{
-    api::assets_mut,
-    state::{Mode, Status, W3DConfigStore},
+use super::stores::{
+    config::{Mode, Status, W3DConfigStore},
+    heap::StateStore,
 };
 
 #[derive(Clone, Debug, CandidType, Deserialize)]
@@ -34,7 +37,7 @@ pub async fn handle_grant_ownership(args: GrantOwnershipArgs) {
         Mode::Trial => grant_commit_permission(args.ii_principal),
         Mode::Developer | Mode::User => {
             grant_commit_permission(args.ii_principal);
-            
+
             let mut settings = canister_status_response().await.settings;
 
             let update_settings_arg: UpdateSettingsArgument = match args.mode {
@@ -107,10 +110,7 @@ pub async fn add_controller(p: Principal) {
 
 fn grant_commit_permission(p: Principal) {
     W3DConfigStore::set_ii_principal(p);
-    
-    assets_mut(|s| {
-        s.grant_permission(p, &Permission::Commit);
-    });
+    StateStore::grant_permission(p, &Permission::Commit);
 }
 
 pub async fn canister_status_response() -> CanisterStatusResponse {
@@ -118,7 +118,8 @@ pub async fn canister_status_response() -> CanisterStatusResponse {
         canister_id: ic_cdk::api::id(),
     };
 
-    canister_status(arg).await
+    canister_status(arg)
+        .await
         .unwrap_or_else(|err| trap(&format!("{:?}", err)))
         .0
 }

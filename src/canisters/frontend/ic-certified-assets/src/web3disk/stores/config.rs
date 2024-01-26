@@ -1,20 +1,15 @@
+use crate::web3disk::stores::{MemoryManagerStore, MEM_ID_CONFIG};
 use candid::{CandidType, Decode, Deserialize, Encode, Principal};
 use ic_stable_structures::{
-    cell::Cell as StableCell,
-    memory_manager::{MemoryId, MemoryManager, VirtualMemory},
-    storable::Bound,
-    BTreeMap as StableBTree, DefaultMemoryImpl, Storable,
+    cell::Cell as StableCell, memory_manager::VirtualMemory, storable::Bound, DefaultMemoryImpl,
+    Storable,
 };
 use std::{borrow::Cow, cell::RefCell};
 
-static MEM_ID_W3DCONFIG: MemoryId = MemoryId::new(0);
-
 thread_local! {
-    static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> = RefCell::new(MemoryManager::init(DefaultMemoryImpl::default()));
-
     static W3DCONFIG: RefCell<StableCell<W3DConfig, VirtualMemory<DefaultMemoryImpl>>> = RefCell::new(
         StableCell::init(
-            MEMORY_MANAGER.with(|mm| mm.borrow().get(MEM_ID_W3DCONFIG)),
+            MemoryManagerStore::get(MEM_ID_CONFIG),
             W3DConfig::default()
         ).expect("Failed to init W3DConfig Stable Cell")
     );
