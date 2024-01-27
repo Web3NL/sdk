@@ -1,13 +1,15 @@
-mod assets;
+mod canisters;
 mod frontend;
 mod interface;
-mod ownership;
 mod stores;
 
+use self::{
+    frontend::assets::init_frontend_assets,
+    stores::{config::ConfigStore, heap::StateStore},
+};
 use crate::types::Permission;
-use assets::init_frontend_assets;
 
-use self::stores::{config::W3DConfigStore, heap::StateStore};
+pub const W3D_VERSION: &str = "0.0.2";
 
 #[ic_cdk::init]
 pub fn init() {
@@ -22,7 +24,7 @@ pub fn init() {
 pub fn post_upgrade() {
     init();
 
-    if let Some(ii_principal) = W3DConfigStore::ii_principal() {
+    if let Some(ii_principal) = ConfigStore::ii_principal() {
         StateStore::grant_permission(ii_principal, &Permission::Commit);
     }
 }

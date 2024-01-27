@@ -1,9 +1,10 @@
-use super::frontend::{CanisterInfo, CanisterOwners};
-use super::ownership::{
-    add_controller as ic_add_controller, handle_grant_ownership, GrantOwnershipArgs,
-};
-use super::stores::config::{Status, W3DConfigStore};
+pub mod settings_page;
+
+use self::settings_page::{CanisterInfo, CanisterOwners, _owners, _settings_info};
+use super::canisters::ic::_add_controller;
+use super::stores::config::{handle_grant_ownership, ConfigStore, GrantOwnershipArgs, Status};
 use super::stores::heap::StateStore;
+use super::W3D_VERSION;
 use crate::asset_certification::types::http::{
     CallbackFunc, HttpRequest, HttpResponse, StreamingCallbackHttpResponse, StreamingCallbackToken,
 };
@@ -12,56 +13,10 @@ use candid::{candid_method, Principal};
 use ic_cdk::api::data_certificate;
 use ic_cdk::{caller, query, trap, update};
 
-const W3D_API_VERSION: &str = "0.0.2";
-
-// State helper for frontend assets init, used in assets::init_frontend_assets()
-// pub fn assets_mut<R>(f: impl FnOnce(&mut State) -> R) -> R {
-//     STATE.with(|assets| f(&mut assets.borrow_mut()))
-// }
-
-// #[update(guard = "can_commit")]
-// #[candid_method(update)]
-// fn store(arg: StoreArg) {
-//     STATE.with(move |s| {
-//         if let Err(msg) = s.borrow_mut().store(arg, time()) {
-//             trap(&msg);
-//         }
-//         set_certified_data(&s.borrow().root_hash());
-//     });
-// }
-
-// #[update(guard = "can_commit")]
-// #[candid_method(update)]
-// fn delete_asset(arg: DeleteAssetArguments) {
-//     STATE.with(|s| {
-//         s.borrow_mut().delete_asset(arg);
-//         set_certified_data(&s.borrow().root_hash());
-//     });
-// }
-
-// #[query(guard = "can_commit")]
-// #[candid_method(query)]
-// fn get(arg: GetArg) -> EncodedAsset {
-//     STATE.with(|s| match s.borrow().get(arg) {
-//         Ok(asset) => asset,
-//         Err(msg) => trap(&msg),
-//     })
-// }
-
-// #[query(guard = "can_commit")]
-// #[candid_method(query)]
-// fn list() -> Vec<AssetDetails> {
-//     STATE
-//         .with(|s| s.borrow().list_assets())
-//         .into_iter()
-//         // .filter(|asset| asset.key.starts_with(W3D_ASSET_PREFIX))
-//         .collect()
-// }
-
 #[update(guard = "is_controller")]
 #[candid_method(update)]
 async fn grant_ownership(arg: GrantOwnershipArgs) {
-    if W3DConfigStore::is_active() {
+    if ConfigStore::is_active() {
         trap("Already initialized")
     }
 
@@ -71,12 +26,12 @@ async fn grant_ownership(arg: GrantOwnershipArgs) {
 // LOGIN
 #[query(guard = "can_commit")]
 #[candid_method(query)]
-async fn status() -> Status {
+fn status() -> Status {
     if caller() == Principal::anonymous() {
         trap("Anonymous principal not allowed")
     }
 
-    W3DConfigStore::status()
+    ConfigStore::status()
 }
 
 #[query]
@@ -86,7 +41,7 @@ async fn active() -> bool {
         trap("Anonymous principal not allowed")
     }
 
-    match W3DConfigStore::status() {
+    match ConfigStore::status() {
         Status::Active(_) => true,
         _ => false,
     }
@@ -95,31 +50,31 @@ async fn active() -> bool {
 #[query(guard = "can_commit")]
 #[candid_method(query)]
 fn api_version() -> String {
-    W3D_API_VERSION.to_string()
+    W3D_VERSION.to_string()
 }
 
 #[update(guard = "can_commit")]
 #[candid_method(update)]
 pub async fn settings_info() -> CanisterInfo {
-    crate::web3disk::frontend::_settings_info().await
+    _settings_info().await
 }
 
 #[update(guard = "can_commit")]
 #[candid_method(update)]
 async fn owners() -> CanisterOwners {
-    crate::web3disk::frontend::_owners().await
+    _owners().await
 }
 
 #[update(guard = "is_controller")]
 #[candid_method(update)]
 async fn add_controller(p: Principal) {
-    ic_add_controller(p).await;
+    _add_controller(p).await;
 }
 
 #[query(guard = "can_commit")]
 #[candid_method(query)]
 fn ii_principal() -> Principal {
-    W3DConfigStore::ii_principal().unwrap_or_else(|| trap("No II principal set"))
+    ConfigStore::ii_principal().unwrap_or_else(|| trap("No II principal set"))
 }
 
 #[query]

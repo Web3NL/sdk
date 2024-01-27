@@ -1,12 +1,13 @@
-use crate::types::{SetAssetPropertiesArguments, StoreArg};
+use crate::{
+    types::{SetAssetPropertiesArguments, StoreArg},
+    web3disk::stores::heap::StateStore,
+};
 use ic_cdk::api::{set_certified_data, time, trap};
 use include_dir::{include_dir, Dir};
 use mime::Mime;
 use serde_bytes::ByteBuf;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
-
-use super::stores::heap::StateStore;
 
 static ASSET_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../../../../../src/web3disk/build");
 

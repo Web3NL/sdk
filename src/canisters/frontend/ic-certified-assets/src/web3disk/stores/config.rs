@@ -1,5 +1,19 @@
-use crate::web3disk::stores::{MemoryManagerStore, MEM_ID_CONFIG};
+use super::heap::StateStore;
+use crate::{
+    types::Permission,
+    web3disk::{
+        canisters::ic::_canister_status,
+        stores::{MemoryManagerStore, MEM_ID_CONFIG},
+    },
+};
 use candid::{CandidType, Decode, Deserialize, Encode, Principal};
+use ic_cdk::{
+    api::management_canister::{
+        main::{update_settings, UpdateSettingsArgument},
+        provisional::CanisterSettings,
+    },
+    trap,
+};
 use ic_stable_structures::{
     cell::Cell as StableCell, memory_manager::VirtualMemory, storable::Bound, DefaultMemoryImpl,
     Storable,
@@ -7,23 +21,23 @@ use ic_stable_structures::{
 use std::{borrow::Cow, cell::RefCell};
 
 thread_local! {
-    static W3DCONFIG: RefCell<StableCell<W3DConfig, VirtualMemory<DefaultMemoryImpl>>> = RefCell::new(
+    static CONFIG: RefCell<StableCell<Config, VirtualMemory<DefaultMemoryImpl>>> = RefCell::new(
         StableCell::init(
             MemoryManagerStore::get(MEM_ID_CONFIG),
-            W3DConfig::default()
-        ).expect("Failed to init W3DConfig Stable Cell")
+            Config::default()
+        ).expect("Failed to init Config Stable Cell")
     );
 }
 
-pub struct W3DConfigStore;
+pub struct ConfigStore;
 
-impl W3DConfigStore {
+impl ConfigStore {
     pub fn ii_principal() -> Option<Principal> {
-        W3DCONFIG.with(|refcell| refcell.borrow().get().ii_principal())
+        CONFIG.with(|refcell| refcell.borrow().get().ii_principal())
     }
 
     pub fn set_ii_principal(ii_principal: Principal) {
-        W3DCONFIG.with(|refcell| {
+        CONFIG.with(|refcell| {
             let mut refcell = refcell.borrow_mut();
             let mut config = refcell.get().clone();
 
@@ -33,11 +47,11 @@ impl W3DConfigStore {
     }
 
     pub fn status() -> Status {
-        W3DCONFIG.with(|cell| cell.borrow().get().status())
+        CONFIG.with(|cell| cell.borrow().get().status())
     }
 
     pub fn set_status(status: Status) {
-        W3DCONFIG.with(|refcell| {
+        CONFIG.with(|refcell| {
             let mut refcell = refcell.borrow_mut();
             let mut config = refcell.get().clone();
 
@@ -47,12 +61,12 @@ impl W3DConfigStore {
     }
 
     pub fn is_active() -> bool {
-        W3DCONFIG.with(|refcell| refcell.borrow().get().is_active())
+        CONFIG.with(|refcell| refcell.borrow().get().is_active())
     }
 }
 
 #[derive(CandidType, Deserialize, Default, Clone, Copy)]
-pub struct W3DConfig {
+struct Config {
     pub status: Status,
     pub ii_principal: Option<Principal>,
 }
@@ -71,7 +85,7 @@ pub enum Mode {
     User,
 }
 
-impl W3DConfig {
+impl Config {
     pub fn status(&self) -> Status {
         self.status.clone()
     }
@@ -96,7 +110,7 @@ impl W3DConfig {
     }
 }
 
-impl Storable for W3DConfig {
+impl Storable for Config {
     const BOUND: Bound = Bound::Bounded {
         max_size: 256,
         is_fixed_size: true,
@@ -109,4 +123,73 @@ impl Storable for W3DConfig {
     fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
         Decode!(&bytes, Self).unwrap()
     }
+}
+
+#[derive(Clone, Debug, CandidType, Deserialize)]
+pub struct GrantOwnershipArgs {
+    mode: Mode,
+    ii_principal: Principal,
+}
+
+pub async fn handle_grant_ownership(args: GrantOwnershipArgs) {
+    // Web3Disk Modes
+    // Developer: Grant caller (II Principal) commit permission and add as controller
+    // Trial: Grant caller (II Principal) commit permission
+    // User: Grant caller (II Principal) commit permission and set as only controller
+    // besides canister principal itself
+
+    match args.mode {
+        Mode::Trial => grant_commit_permission(args.ii_principal),
+        Mode::Developer | Mode::User => {
+            grant_commit_permission(args.ii_principal);
+
+            let mut settings = _canister_status().await.settings;
+
+            let update_settings_arg: UpdateSettingsArgument = match args.mode {
+                Mode::Developer => {
+                    // We only add the II principal as an additional controller, keeping dev IDs
+                    settings.controllers.push(args.ii_principal);
+
+                    UpdateSettingsArgument {
+                        canister_id: ic_cdk::api::id(),
+                        settings: CanisterSettings {
+                            controllers: Some(settings.controllers),
+                            memory_allocation: Some(settings.memory_allocation),
+                            compute_allocation: Some(settings.compute_allocation),
+                            freezing_threshold: Some(settings.freezing_threshold),
+                            reserved_cycles_limit: Some(settings.reserved_cycles_limit),
+                        },
+                    }
+                }
+                Mode::User => {
+                    // We set the II principal and canister id as the only controllers
+                    let controllers = vec![ic_cdk::api::id(), args.ii_principal];
+
+                    UpdateSettingsArgument {
+                        canister_id: ic_cdk::api::id(),
+                        settings: CanisterSettings {
+                            controllers: Some(controllers),
+                            memory_allocation: Some(settings.memory_allocation),
+                            compute_allocation: Some(settings.compute_allocation),
+                            freezing_threshold: Some(settings.freezing_threshold),
+                            reserved_cycles_limit: Some(settings.reserved_cycles_limit),
+                        },
+                    }
+                }
+                _ => trap("Impossible mode error"),
+            };
+
+            update_settings(update_settings_arg)
+                .await
+                .unwrap_or_else(|err| trap(&format!(" {:?}, {} ", err.0, err.1)));
+
+            ConfigStore::set_ii_principal(args.ii_principal);
+            ConfigStore::set_status(Status::Active(args.mode));
+        }
+    }
+}
+
+fn grant_commit_permission(p: Principal) {
+    ConfigStore::set_ii_principal(p);
+    StateStore::grant_permission(p, &Permission::Commit);
 }
