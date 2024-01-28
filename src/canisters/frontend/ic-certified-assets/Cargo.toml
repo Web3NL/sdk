@@ -30,6 +30,7 @@ sha2.workspace = true
 mime.workspace = true
 mime_guess.workspace = true
 ic-stable-structures = "0.6.2"
+ic-ledger-types = "0.9.0"
 include_dir = "0.7.3"
 flate2 = "1.0.28"
 num-bigint = "0.4.4"

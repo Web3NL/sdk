@@ -2,6 +2,7 @@ pub mod settings_page;
 
 use self::settings_page::{CanisterInfo, CanisterOwners, _owners, _settings_info};
 use super::canisters::ic::_add_controller;
+use super::canisters::ledger::DefaultAccountAndBalance;
 use super::stores::config::{handle_grant_ownership, ConfigStore, GrantOwnershipArgs, Status};
 use super::stores::heap::StateStore;
 use super::W3D_VERSION;
@@ -12,6 +13,12 @@ use crate::types::Permission;
 use candid::{candid_method, Principal};
 use ic_cdk::api::data_certificate;
 use ic_cdk::{caller, query, trap, update};
+
+#[update(guard = "can_commit")]
+#[candid_method(update)]
+async fn default_account_and_balance() -> DefaultAccountAndBalance {
+    crate::web3disk::canisters::ledger::get_default_account_and_balance().await
+}
 
 #[update(guard = "is_controller")]
 #[candid_method(update)]
