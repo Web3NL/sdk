@@ -69,12 +69,13 @@ pub async fn _settings_info() -> CanisterInfo {
 
 #[derive(Clone, CandidType, Deserialize)]
 pub struct CanisterOwners {
+    pub web3disk: Principal,
     pub ii_principal: Principal,
     pub owners: Option<Vec<Principal>>,
 }
 
 pub async fn _owners() -> CanisterOwners {
-    let id = ic_cdk::api::id();
+    let web3disk = ic_cdk::api::id();
 
     let ii_principal = ConfigStore::ii_principal().unwrap_or_else(|| trap("No II principal set"));
 
@@ -91,10 +92,11 @@ pub async fn _owners() -> CanisterOwners {
 
     let owners = controllers
         .into_iter()
-        .filter(|p| p != &ii_principal && p != &id)
+        .filter(|p| p != &ii_principal && p != &web3disk)
         .collect();
 
     CanisterOwners {
+        web3disk,
         ii_principal,
         owners: Some(owners),
     }
