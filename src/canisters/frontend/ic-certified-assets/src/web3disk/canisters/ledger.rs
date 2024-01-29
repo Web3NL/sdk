@@ -50,19 +50,15 @@ pub async fn icp_balance() -> Tokens {
 /*
 Transfer ICP to CMC canister for cycle minting
 */
-pub async fn transfer_icp_to_cmc_for_cycles_minting(
-    amount: Tokens,
-    canister_id: Principal,
-) -> BlockIndex {
+pub async fn transfer_icp_to_cmc_for_cycles_minting() -> BlockIndex {
+    let amount = icp_balance().await - ICP_TRANSACTION_FEE;
+
     let arg = TransferArgs {
         memo: MEMO_TOP_UP_CANISTER,
         amount,
         fee: ICP_TRANSACTION_FEE,
         from_subaccount: None,
-        to: AccountIdentifier::new(
-            &MAINNET_CYCLES_MINTING_CANISTER_ID,
-            &Subaccount::from(canister_id),
-        ),
+        to: AccountIdentifier::new(&MAINNET_CYCLES_MINTING_CANISTER_ID, &Subaccount::from(id())),
         created_at_time: Some(Timestamp {
             timestamp_nanos: time(),
         }),

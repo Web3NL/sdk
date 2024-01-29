@@ -3,40 +3,12 @@ use ic_cdk::call;
 use ic_ledger_types::{BlockIndex, MAINNET_CYCLES_MINTING_CANISTER_ID};
 
 /*
-Query the CMC canister for the ICP/XDR rate
-*/
-pub async fn icp_xdr_rate() -> IcpXdrConversionRate {
-    call::<(), (IcpXdrConversionRateResponse,)>(
-        MAINNET_CYCLES_MINTING_CANISTER_ID,
-        "get_icp_xdr_conversion_rate",
-        (),
-    )
-    .await
-    .expect("Failed to call get_icp_to_xdr_rate")
-    .0
-    .data
-}
-
-#[derive(CandidType, Deserialize)]
-pub struct IcpXdrConversionRateResponse {
-    certificate: Vec<u8>,
-    data: IcpXdrConversionRate,
-    hash_tree: Vec<u8>,
-}
-
-#[derive(CandidType, Deserialize)]
-pub struct IcpXdrConversionRate {
-    pub xdr_permyriad_per_icp: u64,
-    timestamp_seconds: u64,
-}
-
-/*
 Notify CMC of a ICP tx for cycle minting
 */
-pub async fn notify_top_up(block_index: BlockIndex, canister_id: Principal) -> Cycles {
+pub async fn notify_top_up(block_index: BlockIndex) -> Cycles {
     let arg = NotifyTopUpArg {
         block_index,
-        canister_id,
+        canister_id: ic_cdk::api::id(),
     };
 
     let notify_top_ip_result = call::<(NotifyTopUpArg,), (NotifyTopUpResult,)>(

@@ -20,6 +20,12 @@ async fn default_account_and_balance() -> DefaultAccountAndBalance {
     crate::web3disk::canisters::ledger::get_default_account_and_balance().await
 }
 
+#[update(guard = "can_commit")]
+#[candid_method(update)]
+async fn top_up() {
+    crate::web3disk::interface::settings_page::top_up().await;
+}
+
 #[update(guard = "is_controller")]
 #[candid_method(update)]
 async fn grant_ownership(arg: GrantOwnershipArgs) {

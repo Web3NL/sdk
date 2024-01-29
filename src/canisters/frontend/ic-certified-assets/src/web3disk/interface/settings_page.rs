@@ -1,4 +1,7 @@
-use crate::web3disk::stores::config::ConfigStore;
+use crate::web3disk::{
+    canisters::{cmc::notify_top_up, ledger::transfer_icp_to_cmc_for_cycles_minting},
+    stores::config::ConfigStore,
+};
 use candid::{CandidType, Deserialize, Principal};
 use ic_cdk::{
     api::management_canister::{
@@ -65,6 +68,11 @@ pub async fn _settings_info() -> CanisterInfo {
         .0;
 
     CanisterInfo::from(canister_status_response)
+}
+
+pub async fn top_up() {
+    let index = transfer_icp_to_cmc_for_cycles_minting().await;
+    notify_top_up(index).await;
 }
 
 #[derive(Clone, CandidType, Deserialize)]
