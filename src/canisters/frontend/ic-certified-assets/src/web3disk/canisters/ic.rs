@@ -1,25 +1,25 @@
 use candid::Principal;
 use ic_cdk::{
     api::management_canister::{
-        main::{canister_status, update_settings, CanisterStatusResponse, UpdateSettingsArgument},
+        main::{canister_status as ic_canister_status, update_settings, CanisterStatusResponse, UpdateSettingsArgument},
         provisional::{CanisterIdRecord, CanisterSettings},
     },
     trap,
 };
 
-pub async fn _canister_status() -> CanisterStatusResponse {
+pub async fn canister_status() -> CanisterStatusResponse {
     let arg = CanisterIdRecord {
         canister_id: ic_cdk::api::id(),
     };
 
-    canister_status(arg)
+    ic_canister_status(arg)
         .await
         .unwrap_or_else(|err| trap(&format!("{:?}", err)))
         .0
 }
 
-pub async fn _add_controller(p: Principal) {
-    let mut settings = _canister_status().await.settings;
+pub async fn add_controller(p: Principal) {
+    let mut settings = canister_status().await.settings;
 
     settings.controllers.push(p);
     let new_controllers = settings.controllers;

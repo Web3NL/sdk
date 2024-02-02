@@ -2,7 +2,7 @@ use super::heap::StateStore;
 use crate::{
     types::Permission,
     web3disk::{
-        canisters::ic::_canister_status,
+        canisters::ic::canister_status,
         stores::{MemoryManagerStore, MEM_ID_CONFIG},
     },
 };
@@ -143,7 +143,7 @@ pub async fn handle_grant_ownership(args: GrantOwnershipArgs) {
         Mode::Developer | Mode::User => {
             grant_commit_permission(args.ii_principal);
 
-            let mut settings = _canister_status().await.settings;
+            let mut settings = canister_status().await.settings;
 
             let update_settings_arg: UpdateSettingsArgument = match args.mode {
                 Mode::Developer => {

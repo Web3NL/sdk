@@ -1,7 +1,7 @@
 pub mod settings_page;
 
-use self::settings_page::{CanisterInfo, CanisterOwners, _owners, _settings_info};
-use super::canisters::ic::_add_controller;
+use self::settings_page::{CanisterInfo, CanisterOwners, owners, settings_info};
+use super::canisters::ic::add_controller;
 use super::canisters::ledger::DefaultAccountAndBalance;
 use super::stores::config::{handle_grant_ownership, ConfigStore, GrantOwnershipArgs, Status};
 use super::stores::heap::StateStore;
@@ -16,19 +16,19 @@ use ic_cdk::{caller, query, trap, update};
 
 #[update(guard = "can_commit")]
 #[candid_method(update)]
-async fn default_account_and_balance() -> DefaultAccountAndBalance {
+async fn w3d_default_account_and_balance() -> DefaultAccountAndBalance {
     crate::web3disk::canisters::ledger::get_default_account_and_balance().await
 }
 
 #[update(guard = "can_commit")]
 #[candid_method(update)]
-async fn top_up() {
+async fn w3d_top_up() {
     crate::web3disk::interface::settings_page::top_up().await;
 }
 
 #[update(guard = "is_controller")]
 #[candid_method(update)]
-async fn grant_ownership(arg: GrantOwnershipArgs) {
+async fn w3d_grant_ownership(arg: GrantOwnershipArgs) {
     if ConfigStore::is_active() {
         trap("Already initialized")
     }
@@ -39,7 +39,7 @@ async fn grant_ownership(arg: GrantOwnershipArgs) {
 // LOGIN
 #[query(guard = "can_commit")]
 #[candid_method(query)]
-fn status() -> Status {
+fn w3d_status() -> Status {
     if caller() == Principal::anonymous() {
         trap("Anonymous principal not allowed")
     }
@@ -49,7 +49,7 @@ fn status() -> Status {
 
 #[query]
 #[candid_method(query)]
-async fn active() -> bool {
+async fn w3d_active() -> bool {
     if caller() == Principal::anonymous() {
         trap("Anonymous principal not allowed")
     }
@@ -62,31 +62,31 @@ async fn active() -> bool {
 
 #[query(guard = "can_commit")]
 #[candid_method(query)]
-fn api_version() -> String {
+fn w3d_api_version() -> String {
     W3D_VERSION.to_string()
 }
 
 #[update(guard = "can_commit")]
 #[candid_method(update)]
-pub async fn settings_info() -> CanisterInfo {
-    _settings_info().await
+pub async fn w3d_settings_info() -> CanisterInfo {
+    settings_info().await
 }
 
 #[update(guard = "can_commit")]
 #[candid_method(update)]
-async fn owners() -> CanisterOwners {
-    _owners().await
+async fn w3d_owners() -> CanisterOwners {
+    owners().await
 }
 
 #[update(guard = "is_controller")]
 #[candid_method(update)]
-async fn add_controller(p: Principal) {
-    _add_controller(p).await;
+async fn w3d_add_controller(p: Principal) {
+    add_controller(p).await;
 }
 
 #[query(guard = "can_commit")]
 #[candid_method(query)]
-fn ii_principal() -> Principal {
+fn w3d_ii_principal() -> Principal {
     ConfigStore::ii_principal().unwrap_or_else(|| trap("No II principal set"))
 }
 

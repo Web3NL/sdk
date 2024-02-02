@@ -57,7 +57,7 @@ impl From<CanisterStatusResponse> for CanisterInfo {
     }
 }
 
-pub async fn _settings_info() -> CanisterInfo {
+pub async fn settings_info() -> CanisterInfo {
     let arg = CanisterIdRecord {
         canister_id: ic_cdk::api::id(),
     };
@@ -82,7 +82,7 @@ pub struct CanisterOwners {
     pub owners: Option<Vec<Principal>>,
 }
 
-pub async fn _owners() -> CanisterOwners {
+pub async fn owners() -> CanisterOwners {
     let web3disk = ic_cdk::api::id();
 
     let ii_principal = ConfigStore::ii_principal().unwrap_or_else(|| trap("No II principal set"));
