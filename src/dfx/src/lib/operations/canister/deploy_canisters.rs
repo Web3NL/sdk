@@ -1,10 +1,10 @@
 use crate::lib::builders::BuildConfig;
 use crate::lib::canister_info::assets::AssetsCanisterInfo;
 use crate::lib::canister_info::CanisterInfo;
+use crate::lib::cycles_ledger_types::create_canister::SubnetSelection;
 use crate::lib::environment::Environment;
 use crate::lib::error::DfxResult;
 use crate::lib::ic_attributes::CanisterSettings;
-use crate::lib::identity::wallet::{get_or_create_wallet_canister, GetOrCreateWalletCanisterError};
 use crate::lib::installers::assets::prepare_assets_for_proposal;
 use crate::lib::models::canister::CanisterPool;
 use crate::lib::operations::canister::deploy_canisters::DeployMode::{
@@ -12,7 +12,6 @@ use crate::lib::operations::canister::deploy_canisters::DeployMode::{
 };
 use crate::lib::operations::canister::motoko_playground::reserve_canister_with_playground;
 use crate::lib::operations::canister::{create_canister, install_canister::install_canister};
-use crate::util::{blob_from_arguments, get_candid_init_type};
 use anyhow::{anyhow, bail, Context};
 use candid::Principal;
 use dfx_core::config::model::canister_id_store::CanisterIdStore;
@@ -46,13 +45,14 @@ pub async fn deploy_canisters(
     upgrade_unchanged: bool,
     with_cycles: Option<u128>,
     created_at_time: Option<u64>,
-    specified_id: Option<Principal>,
+    specified_id_from_cli: Option<Principal>,
     call_sender: &CallSender,
     from_subaccount: Option<Subaccount>,
     no_wallet: bool,
     skip_consent: bool,
     env_file: Option<PathBuf>,
     no_asset_upgrade: bool,
+    subnet_selection: Option<SubnetSelection>,
 ) -> DfxResult {
     let log = env.get_logger();
 
@@ -108,41 +108,18 @@ pub async fn deploy_canisters(
         .iter()
         .any(|canister| initial_canister_id_store.find(canister).is_none())
     {
-        let proxy_sender;
-        let create_call_sender = if no_wallet
-            || specified_id.is_some()
-            || matches!(call_sender, CallSender::Wallet(_))
-            || env.get_network_descriptor().is_playground()
-        {
-            call_sender
-        } else {
-            match get_or_create_wallet_canister(
-                env,
-                env.get_network_descriptor(),
-                env.get_selected_identity().expect("No selected identity"),
-            )
-            .await
-            {
-                Ok(wallet) => {
-                    proxy_sender = CallSender::Wallet(*wallet.canister_id_());
-                    &proxy_sender
-                }
-                Err(err) => match err {
-                    GetOrCreateWalletCanisterError::NoWalletConfigured { .. } => call_sender,
-                    _ => bail!(err),
-                },
-            }
-        };
         register_canisters(
             env,
             &canisters_to_load,
             &initial_canister_id_store,
             with_cycles,
-            specified_id,
-            create_call_sender,
+            specified_id_from_cli,
+            call_sender,
+            no_wallet,
             from_subaccount,
             created_at_time,
             &config,
+            subnet_selection,
         )
         .await?;
     } else {
@@ -210,11 +187,13 @@ async fn register_canisters(
     canister_names: &[String],
     canister_id_store: &CanisterIdStore,
     with_cycles: Option<u128>,
-    specified_id: Option<Principal>,
+    specified_id_from_cli: Option<Principal>,
     call_sender: &CallSender,
+    no_wallet: bool,
     from_subaccount: Option<Subaccount>,
     created_at_time: Option<u64>,
     config: &Config,
+    subnet_selection: Option<SubnetSelection>,
 ) -> DfxResult {
     let canisters_to_create = canister_names
         .iter()
@@ -268,8 +247,9 @@ async fn register_canisters(
                 env,
                 canister_name,
                 with_cycles,
-                specified_id,
+                specified_id_from_cli,
                 call_sender,
+                no_wallet,
                 from_subaccount,
                 CanisterSettings {
                     controllers,
@@ -279,6 +259,7 @@ async fn register_canisters(
                     reserved_cycles_limit,
                 },
                 created_at_time,
+                subnet_selection.clone(),
             )
             .await?;
         }
@@ -340,17 +321,14 @@ async fn install_canisters(
         let canister_id = canister_id_store.get(canister_name)?;
         let canister_info = CanisterInfo::load(config, canister_name, Some(canister_id))?;
 
-        let idl_path = canister_info.get_constructor_idl_path();
-        let init_type = get_candid_init_type(&idl_path);
-        let install_args = || blob_from_arguments(argument, None, argument_type, &init_type);
-
         install_canister(
             env,
             &mut canister_id_store,
             canister_id,
-            Some(&canister_info),
+            &canister_info,
             None,
-            install_args,
+            argument,
+            argument_type,
             install_mode,
             call_sender,
             upgrade_unchanged,
